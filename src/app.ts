@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 
 import userRoutes from "./routes/user.routes.js";
+import matchRoutes from "./routes/match.routes.js";
 
 export const app = express();
 
@@ -15,3 +16,5 @@ app.get("/health", (_, res) => {
 });
 
 app.use("/users", userRoutes);
+
+app.use("/matches", matchRoutes);

@@ -52,21 +52,49 @@ export class MatchService {
 
     const matches = [];
 
-    for (const candidate of candidates) {
-      const score = this.calculateScore(user, candidate);
+  for (const candidate of candidates) {
+    const score = this.calculateScore(user, candidate);
 
-      if (score >= 70) {
-        const match = await prisma.match.create({
-          data: {
+    if (score < 70) {
+      continue;
+    }
+
+    const existingMatch = await prisma.match.findFirst({
+      where: {
+        OR: [
+          {
             userAId: user.id,
             userBId: candidate.id,
-            score,
           },
-        });
+          {
+            userAId: candidate.id,
+            userBId: user.id,
+          },
+        ],
+      },
+    });
 
-        matches.push(match);
-      }
+    if (existingMatch) {
+      console.log(
+    `⏭️ Match already exists: ${user.firstName} ↔ ${candidate.firstName}`
+  );
+      continue;
     }
+
+    console.log(
+    `🎯 Match found: ${user.firstName} ↔ ${candidate.firstName} (${score}%)`
+  );
+
+    const match = await prisma.match.create({
+      data: {
+        userAId: user.id,
+        userBId: candidate.id,
+        score,
+      },
+    });
+
+    matches.push(match);
+  }
 
     return matches;
   }

@@ -3,6 +3,7 @@ import cors from "cors";
 
 import userRoutes from "./routes/user.routes.js";
 import matchRoutes from "./routes/match.routes.js";
+import swipeRoutes from "./routes/swipe.routes.js";
 
 export const app = express();
 
@@ -18,3 +19,5 @@ app.get("/health", (_, res) => {
 app.use("/users", userRoutes);
 
 app.use("/matches", matchRoutes);
+
+app.use("/swipe", swipeRoutes);

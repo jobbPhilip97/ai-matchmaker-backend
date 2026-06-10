@@ -34,14 +34,18 @@ model User {
 }
 
 model Match {
-  id         String   @id @default(cuid())
+  id String @id @default(cuid())
 
-  userAId    String
-  userBId    String
+  userAId String
+  userBId String
 
-  score      Float
+  score Float
 
-  status     String   @default("pending")
+  userAStatus String @default("pending")
+  userBStatus String @default("pending")
 
-  createdAt  DateTime @default(now())
+  status String @default("pending")
+  // pending | matched | rejected
+
+  createdAt DateTime @default(now())
 }

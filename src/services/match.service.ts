@@ -42,60 +42,101 @@ export class MatchService {
       throw new Error("User not found");
     }
 
+    // STEP 1: active chats
+    const activeChats = await prisma.chat.findMany({
+      where: { active: true },
+    });
+
+    // STEP 2: pending matches
+    const pendingMatches = await prisma.match.findMany({
+      where: { status: "pending" },
+    });
+
+    // STEP 3: build busy user list
+    const busyUserIds = new Set<string>();
+
+    activeChats.forEach(chat => {
+      busyUserIds.add(chat.userAId);
+      busyUserIds.add(chat.userBId);
+    });
+
+    pendingMatches.forEach(match => {
+      busyUserIds.add(match.userAId);
+      busyUserIds.add(match.userBId);
+    });
+
+    // STEP 4: filter candidates
     const candidates = await prisma.user.findMany({
       where: {
         id: {
           not: userId,
+          notIn: Array.from(busyUserIds),
         },
       },
     });
 
-    const matches = [];
+    // 🔥 NEW: track best match only
+    let bestCandidate: any = null;
+    let bestScore = 0;
 
-  for (const candidate of candidates) {
-    const score = this.calculateScore(user, candidate);
+    for (const candidate of candidates) {
+      const score = this.calculateScore(user, candidate);
 
-    if (score < 70) {
-      continue;
+      if (score < 70) {
+        continue;
+      }
+
+      const existingMatch = await prisma.match.findFirst({
+        where: {
+          OR: [
+            {
+              userAId: user.id,
+              userBId: candidate.id,
+            },
+            {
+              userAId: candidate.id,
+              userBId: user.id,
+            },
+          ],
+        },
+      });
+
+      if (existingMatch) {
+        console.log(
+          `⏭️ Match already exists: ${user.firstName} ↔ ${candidate.firstName}`
+        );
+        continue;
+      }
+
+      if (
+        score > bestScore ||
+        (score === bestScore &&
+          candidate.id < bestCandidate?.id)
+      ) {
+        bestScore = score;
+        bestCandidate = candidate;
+      }
     }
 
-    const existingMatch = await prisma.match.findFirst({
-      where: {
-        OR: [
-          {
-            userAId: user.id,
-            userBId: candidate.id,
-          },
-          {
-            userAId: candidate.id,
-            userBId: user.id,
-          },
-        ],
-      },
-    });
-
-    if (existingMatch) {
-      console.log(
-    `⏭️ Match already exists: ${user.firstName} ↔ ${candidate.firstName}`
-  );
-      continue;
+    // 🔥 CREATE ONLY ONE MATCH
+    if (!bestCandidate) {
+      console.log(`❌ No suitable match found for ${user.firstName}`);
+      return [];
     }
-
-    console.log(
-    `🎯 Match found: ${user.firstName} ↔ ${candidate.firstName} (${score}%)`
-  );
 
     const match = await prisma.match.create({
       data: {
         userAId: user.id,
-        userBId: candidate.id,
-        score,
+        userBId: bestCandidate.id,
+        score: bestScore,
+        status: "pending",
       },
     });
 
-    matches.push(match);
-  }
+    console.log(
+      `🎯 BEST MATCH: ${user.firstName} ↔ ${bestCandidate.firstName} (${bestScore}%)`
+    );
 
-    return matches;
+    return [match];
   }
 }

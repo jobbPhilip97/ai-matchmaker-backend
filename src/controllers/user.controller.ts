@@ -8,8 +8,10 @@ export class UserController {
 
       return res.status(201).json(user);
     } catch (error) {
+      console.error("CREATE USER ERROR:", error);
+
       return res.status(500).json({
-        error: "Could not create user",
+        error: error instanceof Error ? error.message : "Unknown error",
       });
     }
   }

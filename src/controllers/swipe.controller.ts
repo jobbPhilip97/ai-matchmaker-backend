@@ -31,12 +31,20 @@ export class SwipeController {
       updated.userAStatus === "accepted" &&
       updated.userBStatus === "accepted"
     ) {
-      await prisma.match.update({
+        await prisma.match.update({
         where: { id },
         data: {
-          status: "matched",
+            status: "matched",
         },
-      });
+        });
+
+        await prisma.chat.create({
+        data: {
+            userAId: updated.userAId,
+            userBId: updated.userBId,
+            matchId: updated.id,
+        },
+        });
     }
 
     return res.json(updated);

@@ -49,3 +49,16 @@ model Match {
 
   createdAt DateTime @default(now())
 }
+
+model Chat {
+  id String @id @default(cuid())
+
+  userAId String
+  userBId String
+
+  matchId String @unique
+
+  active Boolean @default(true)
+
+  createdAt DateTime @default(now())
+}
